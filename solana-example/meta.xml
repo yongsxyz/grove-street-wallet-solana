@@ -1,0 +1,9 @@
+<meta>
+    <!-- Grove Street Wallet - Example Commands -->
+    <!-- https://github.com/yongsxyz -->
+    <info author="0xverse" name="solana-example" version="1.0.0" type="script" description="Grove Street Wallet - Examples" />
+    <include resource="solana-sdk" />
+
+    <script src="server.lua" type="server" />
+    <script src="client.lua" type="client" cache="false" />
+</meta>

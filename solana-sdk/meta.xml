@@ -1,0 +1,83 @@
+<meta>
+    <!-- Grove Street Wallet - Solana SDK for MTA:SA -->
+    <!-- https://github.com/yongsxyz -->
+    <info author="0xverse" name="solana-sdk" version="2.0.0" type="script" description="Grove Street Wallet - Solana SDK" />
+    <min_mta_version server="1.5.4-9.11342" />
+
+    <!-- Core -->
+    <script src="base58.lua" type="server" />
+    <script src="crypto.lua" type="server" />
+    <script src="bip39_wordlist.lua" type="server" />
+    <script src="bip39.lua" type="server" />
+    <script src="token_registry.lua" type="server" />
+    <script src="solana_rpc.lua" type="server" />
+    <script src="wallet.lua" type="server" />
+    <script src="programs.lua" type="server" />
+    <script src="transaction.lua" type="server" />
+    <script src="solana_client.lua" type="server" />
+
+    <!-- Init / Config -->
+    <export function="initClient" type="server" />
+    <export function="getClientStatus" type="server" />
+    <export function="destroyClient" type="server" />
+
+    <!-- Wallet Management -->
+    <export function="createWallet" type="server" />
+    <export function="importWallet" type="server" />
+    <export function="importWalletJSON" type="server" />
+    <export function="exportWalletHex" type="server" />
+    <export function="exportWalletPhantom" type="server" />
+    <export function="exportWalletCLI" type="server" />
+    <export function="exportWalletJSON" type="server" />
+    <export function="generateMnemonic" type="server" />
+    <export function="importFromMnemonic" type="server" />
+    <export function="exportMnemonic" type="server" />
+    <export function="listWallets" type="server" />
+    <export function="removeWallet" type="server" />
+    <export function="hasWallet" type="server" />
+    <export function="getPublicKey" type="server" />
+    <export function="signMessage" type="server" />
+
+    <!-- Transaction Building & Signing -->
+    <export function="transferSOL" type="server" />
+    <export function="transferToken" type="server" />
+    <export function="transferTokenToWallet" type="server" />
+    <export function="approveToken" type="server" />
+    <export function="revokeToken" type="server" />
+    <export function="burnToken" type="server" />
+    <export function="closeTokenAccount" type="server" />
+    <export function="sendCustomTransaction" type="server" />
+
+    <!-- Account Actions (RPC) -->
+    <export function="fetchBalance" type="server" />
+    <export function="fetchAccount" type="server" />
+    <export function="getTokenBalance" type="server" />
+    <export function="getTokensByOwner" type="server" />
+
+    <!-- Transaction Actions (RPC) -->
+    <export function="getTransactionHistory" type="server" />
+    <export function="getTransaction" type="server" />
+    <export function="sendTransaction" type="server" />
+    <export function="getLatestBlockhash" type="server" />
+
+    <!-- Network Info (RPC) -->
+    <export function="getSlot" type="server" />
+    <export function="getBlockHeight" type="server" />
+    <export function="getEpochInfo" type="server" />
+    <export function="getHealth" type="server" />
+    <export function="getVersion" type="server" />
+
+    <!-- Devnet -->
+    <export function="requestAirdrop" type="server" />
+
+    <!-- Watchers -->
+    <export function="watchBalance" type="server" />
+    <export function="watchSignature" type="server" />
+    <export function="stopWatcher" type="server" />
+
+    <!-- Utility -->
+    <export function="runSelfTest" type="server" />
+    <export function="lamportsToSol" type="server" />
+    <export function="solToLamports" type="server" />
+    <export function="isValidAddress" type="server" />
+</meta>

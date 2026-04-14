@@ -1,0 +1,25 @@
+<meta>
+    <!-- Grove Street Wallet - Solana DApp UI -->
+    <!-- https://github.com/yongsxyz -->
+    <info author="0xverse" name="solana-example-wallet" version="1.0.0" type="script" description="Grove Street Wallet - Example Wallet UI" />
+
+    <include resource="solana-sdk" />
+
+    <script src="server.lua" type="server" />
+    <script src="client.lua" type="client" cache="false" />
+
+    <file src="icons/sol.png" />
+    <file src="icons/usdc.png" />
+    <file src="icons/usdt.png" />
+    <file src="icons/send.png" />
+    <file src="icons/receive.png" />
+    <file src="icons/home.png" />
+    <file src="icons/nav_send.png" />
+    <file src="icons/nav_activity.png" />
+    <file src="icons/nav_wallets.png" />
+    <file src="icons/back.png" />
+    <file src="icons/add.png" />
+    <file src="icons/confirm.png" />
+    <file src="icons/trash.png" />
+    <file src="icons/backup.png" />
+</meta>
