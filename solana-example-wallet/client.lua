@@ -50,6 +50,115 @@ local mnemonicPhrase = nil
 local deleteConfirm = nil
 
 -- ---
+-- AUTO TOKEN ICON CACHE
+-- Server fetches metadata JSON → image bytes for any mint we don't have a
+-- bundled icon for. We save bytes to a sandboxed file then dxCreateTexture.
+-- ---
+local _autoIcons     = {}  -- [mint] = { state = "fetching"|"ready"|"failed", texture }
+local _iconRequested = {}  -- [mint] = true  (don't re-request the same mint)
+
+local function requestTokenIcon(mint)
+    if not mint or _iconRequested[mint] then return end
+    _iconRequested[mint] = true
+    triggerServerEvent("wallet:getTokenImage", localPlayer, mint)
+end
+
+-- Per-mint name/symbol cache (filled from on-chain metadata when the wallet
+-- requests an icon — server piggybacks these on the same fetch pipeline).
+local _autoMeta = {}  -- [mint] = { name, symbol }
+
+addEvent("wallet:tokenMetaData", true)
+addEventHandler("wallet:tokenMetaData", resourceRoot, function(mint, name, symbol)
+    if not mint then return end
+    _autoMeta[mint] = { name = name, symbol = symbol }
+end)
+
+-- Effective name / symbol — bundled tk fields beat auto-fetch beats fallback.
+function tokenDisplayName(tk)
+    if not tk then return "Unknown" end
+    if tk.name and tk.name ~= "" then return tk.name end
+    local m = tk.mint and _autoMeta[tk.mint]
+    if m and m.name and m.name ~= "" then return m.name end
+    if tk.mint then return shortAddr(tk.mint) end
+    return "Unknown"
+end
+
+function tokenDisplaySymbol(tk)
+    if not tk then return "???" end
+    if tk.symbol and tk.symbol ~= "" then return tk.symbol end
+    local m = tk.mint and _autoMeta[tk.mint]
+    if m and m.symbol and m.symbol ~= "" then return m.symbol end
+    return "???"
+end
+
+addEvent("wallet:tokenImageData", true)
+addEventHandler("wallet:tokenImageData", resourceRoot, function(mint, bytes, mime, err)
+    if err or not bytes or #bytes == 0 then
+        _autoIcons[mint] = { state = "failed" }
+        return
+    end
+    local ext = (mime == "image/jpeg") and "jpg"
+             or (mime == "image/gif")  and "gif"
+             or "png"
+    local fname = "_iconcache_" .. mint .. "." .. ext
+    if fileExists(fname) then fileDelete(fname) end
+    local f = fileCreate(fname)
+    if not f then _autoIcons[mint] = { state = "failed" }; return end
+    fileWrite(f, bytes)
+    fileClose(f)
+    local tex = dxCreateTexture(fname)
+    if not tex then _autoIcons[mint] = { state = "failed" }; return end
+    _autoIcons[mint] = { state = "ready", texture = tex }
+end)
+
+-- Hash mint address → consistent placeholder color (so unknown tokens
+-- get the same color across sessions — easier to recognize at a glance).
+local function colorForMint(mint)
+    if not mint then return tocolor(120, 120, 140, 255) end
+    local r, g, b = 0, 0, 0
+    for i = 1, math.min(#mint, 16) do
+        local v = string.byte(mint, i)
+        r = (r + v * 7)  % 256
+        g = (g + v * 13) % 256
+        b = (b + v * 19) % 256
+    end
+    return tocolor(math.max(r, 80), math.max(g, 80), math.max(b, 80), 255)
+end
+
+-- Single source of truth for token icon rendering. Returns true if a real
+-- image was drawn (bundled or auto-fetched), false if a placeholder.
+local function drawTokenIcon(x, y, sz, tk)
+    -- 1. Bundled local icon (USDC, SOL, USDT, ...)
+    if tk and tk.icon then
+        local p = "icons/" .. tk.icon
+        if fileExists(p) then
+            dxDrawImage(x, y, sz, sz, p)
+            return true
+        end
+    end
+    -- 2. Auto-fetched cache
+    local entry = tk and tk.mint and _autoIcons[tk.mint]
+    if entry and entry.state == "ready" and entry.texture then
+        dxDrawImage(x, y, sz, sz, entry.texture)
+        return true
+    end
+    -- 3. Trigger fetch on first sight
+    if tk and tk.mint and not entry then
+        requestTokenIcon(tk.mint)
+    end
+    -- 4. Placeholder: colored square + first letter (use auto-meta if known)
+    local col = tk and tk.mint and colorForMint(tk.mint)
+                or tocolor(80, 80, 100, 255)
+    dxDrawRectangle(x, y, sz, sz, col)
+    local sym = (tokenDisplaySymbol and tokenDisplaySymbol(tk))
+                or (tk and (tk.symbol or tk.name)) or "?"
+    local letter = string.upper(sym:sub(1, 1))
+    dxDrawText(letter, x, y, x + sz, y + sz, tocolor(255, 255, 255, 255),
+        1, "default-bold", "center", "center")
+    return false
+end
+
+-- ---
 -- DX INPUT SYSTEM (no GUI elements, pure DX)
 -- ---
 local inputs = {}       -- id -> { text, focused, cursorPos }
@@ -313,14 +422,10 @@ local function drawMain()
             shown = shown + 1
             local tkHov = inRect(x, y, w, rowH)
             dxDrawRectangle(x, y, w, rowH, tkHov and cardH or card)
-            local hasIcon = tk.icon and fileExists("icons/" .. tk.icon)
-            if hasIcon then
-                dxDrawImage(x + math.floor(10 * sx), y + math.floor((rowH - icoSz) / 2), icoSz, icoSz, "icons/" .. tk.icon)
-            else
-                dxDrawRectangle(x, y, math.floor(3 * sx), rowH, orange)
-            end
-            local tL = hasIcon and (x + math.floor(46 * sx)) or (x + math.floor(14 * sx))
-            local tkName = tk.name or tk.symbol or "Unknown"
+            drawTokenIcon(x + math.floor(10 * sx),
+                y + math.floor((rowH - icoSz) / 2), icoSz, tk)
+            local tL = x + math.floor(46 * sx)
+            local tkName = tokenDisplayName(tk)
             dxDrawText(tkName, tL, y, x + math.floor(180 * sx), y + math.floor(rowH / 2), white, 1, fBold, "left", "bottom")
             local fiat = tokenFiat(tk.uiAmount, tk.symbol)
             if #fiat > 0 then
@@ -435,26 +540,18 @@ local function drawTokens()
 
             dxDrawRectangle(x, y, w, rowH, card)
 
-            -- Icon (if available)
-            if tk.icon then
-                local iconPath = "icons/" .. tk.icon
-                if fileExists(iconPath) then
-                    dxDrawImage(x + math.floor(8 * sx), y + math.floor((rowH - iconSize) / 2), iconSize, iconSize, iconPath)
-                    textLeft = x + math.floor(14 * sx) + iconSize + math.floor(6 * sx)
-                else
-                    dxDrawRectangle(x, y, math.floor(3 * sx), rowH, orange)
-                end
-            else
-                dxDrawRectangle(x, y, math.floor(3 * sx), rowH, orange)
-            end
+            -- Icon (bundled, fetched from URI, or generated placeholder)
+            drawTokenIcon(x + math.floor(8 * sx),
+                y + math.floor((rowH - iconSize) / 2), iconSize, tk)
+            textLeft = x + math.floor(14 * sx) + iconSize + math.floor(6 * sx)
 
-            -- Symbol
-            local symbol = tk.symbol or "???"
+            -- Symbol (auto-fetched from on-chain metadata if not in registry)
+            local symbol = tokenDisplaySymbol(tk)
             dxDrawText(symbol, textLeft, y + math.floor(4 * sy),
                 x + math.floor(180 * sx), y + math.floor(28 * sy), white, 1, fBold, "left", "center")
 
             -- Name
-            local name = tk.name or shortAddr(tk.mint or "?")
+            local name = tokenDisplayName(tk)
             dxDrawText(name, textLeft, y + math.floor(26 * sy),
                 x + math.floor(220 * sx), y + math.floor(46 * sy), gray, 1, fSmall, "left", "center", true)
 
@@ -985,7 +1082,7 @@ function handleClick(id)
         -- Click token row -> send that token
         for i, tk in ipairs(tokens) do
             if id == "send_token_" .. i then
-                sendMode = tk.symbol or "TOKEN"
+                sendMode = tokenDisplaySymbol(tk)
                 sendToken = tk
                 screen = "send"
             end

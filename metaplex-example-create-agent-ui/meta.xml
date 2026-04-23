@@ -1,0 +1,12 @@
+<meta>
+    <!-- Grove Street Wallet - Metaplex Agent Creator UI -->
+    <!-- https://github.com/yongsxyz -->
+    <info author="0xverse" name="metaplex-example-create-agent-ui" version="1.0.0" type="script" description="DirectX UI for creating/listing/viewing Metaplex agents (real MPL Core + Agent Registry)" />
+    <min_mta_version server="1.5.4-9.11342" />
+
+    <include resource="solana-sdk" />
+    <include resource="metaplex-sdk" />
+
+    <script src="server.lua" type="server" />
+    <script src="client.lua" type="client" cache="false" />
+</meta>

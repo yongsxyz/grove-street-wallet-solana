@@ -367,6 +367,18 @@ local function sc_reduce(x)
     for cj = 0, 31 do
         x[cj + 1] = x[cj + 1] - carry * L_BYTES[cj + 1]
     end
+
+    -- Final normalization: the subtraction above can leave bytes outside
+    -- [0, 256) (negative or > 255). Propagate carries once more so every
+    -- output byte is a valid u8. Without this, multi-signer transactions
+    -- intermittently produce signature bytes > 255 which fail base64
+    -- encoding ("Invalid byte at position X: Y").
+    local carry2 = 0
+    for cj = 0, 31 do
+        x[cj + 1] = x[cj + 1] + carry2
+        carry2 = floor(x[cj + 1] / 256)
+        x[cj + 1] = x[cj + 1] - carry2 * 256
+    end
 end
 
 -- Compute (a * b + c) mod L

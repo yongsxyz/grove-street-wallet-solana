@@ -1,0 +1,12 @@
+<meta>
+    <!-- Grove Street Wallet - Metaplex Example for MTA:SA -->
+    <!-- https://github.com/yongsxyz -->
+    <info author="0xverse" name="metaplex-example" version="1.0.0" type="script" description="Pure Lua demo: create a fungible token on Solana via Metaplex" />
+    <min_mta_version server="1.5.4-9.11342" />
+
+    <include resource="solana-sdk" />
+    <include resource="metaplex-sdk" />
+
+    <script src="server.lua" type="server" />
+    <script src="client.lua" type="client" />
+</meta>

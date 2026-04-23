@@ -515,3 +515,125 @@ end)
 addEventHandler("onPlayerQuit", root, function()
     playerNetwork[source] = nil
 end)
+
+-- ---
+-- Auto token-icon fetcher.
+-- Pipeline: mint → metaplex-sdk:fetchMetadata → URI → fetchRemote(JSON)
+--           → image URL → fetchRemote(bytes) → triggerClientEvent
+-- Caches negative results too, so failed mints don't keep retrying.
+-- ---
+
+local mp = exports["metaplex-sdk"]
+local _imgCache = {}    -- [mint] = "fetching" | "ready" | "failed"
+local _evtCount = 0
+local function uniqueEvt(prefix)
+    _evtCount = _evtCount + 1
+    return prefix .. "_" .. tostring(getTickCount()) .. "_" .. tostring(_evtCount)
+end
+
+local function sendImageResult(player, mint, bytes, mime, err)
+    if not isElement(player) then return end
+    triggerClientEvent(player, "wallet:tokenImageData", resourceRoot,
+        mint, bytes, mime, err)
+end
+
+local function fetchTokenImage(player, mint)
+    if not mint or #mint < 30 then return end
+    if _imgCache[mint] == "failed" then
+        sendImageResult(player, mint, nil, nil, "previously failed")
+        return
+    end
+    if _imgCache[mint] == "fetching" or _imgCache[mint] == "ready" then return end
+    _imgCache[mint] = "fetching"
+
+    -- Step 1: metadata account (gives us the URI)
+    local mEvt = uniqueEvt("wallet_meta")
+    addEvent(mEvt, true)
+    local mHandler
+    mHandler = function(result, err)
+        removeEventHandler(mEvt, resourceRoot, mHandler)
+        if err or not result or not result.data then
+            _imgCache[mint] = "failed"
+            sendImageResult(player, mint, nil, nil, "no metadata")
+            return
+        end
+
+        -- Forward on-chain name/symbol to the client immediately, even
+        -- before the image fetch finishes. Custom tokens otherwise show
+        -- "Unknown / ???" while the image bytes are downloading.
+        if isElement(player) then
+            triggerClientEvent(player, "wallet:tokenMetaData", resourceRoot,
+                mint, result.data.name, result.data.symbol)
+        end
+
+        if not result.data.uri or result.data.uri == "" then
+            _imgCache[mint] = "failed"
+            sendImageResult(player, mint, nil, nil, "no metadata uri")
+            return
+        end
+        local uri = result.data.uri
+        if not uri:match("^https?://") then
+            -- Convert ipfs:// to a public gateway
+            if uri:match("^ipfs://") then
+                uri = "https://ipfs.io/ipfs/" .. uri:sub(8)
+            else
+                _imgCache[mint] = "failed"
+                sendImageResult(player, mint, nil, nil, "non-http uri")
+                return
+            end
+        end
+
+        -- Step 2: fetch the off-chain JSON metadata
+        fetchRemote(uri, {
+            method = "GET", connectionAttempts = 2, connectTimeout = 8000,
+        }, function(jsonData, info)
+            if not info or info.statusCode ~= 200 then
+                _imgCache[mint] = "failed"
+                sendImageResult(player, mint, nil, nil,
+                    "json http " .. tostring(info and info.statusCode))
+                return
+            end
+            local j = fromJSON(jsonData)
+            if type(j) == "table" and j[1] and not j.image then j = j[1] end
+            if not j or type(j) ~= "table" or not j.image or j.image == "" then
+                _imgCache[mint] = "failed"
+                sendImageResult(player, mint, nil, nil, "no image field")
+                return
+            end
+            local imgUrl = j.image
+            if imgUrl:match("^ipfs://") then
+                imgUrl = "https://ipfs.io/ipfs/" .. imgUrl:sub(8)
+            end
+            if not imgUrl:match("^https?://") then
+                _imgCache[mint] = "failed"
+                sendImageResult(player, mint, nil, nil, "bad image url")
+                return
+            end
+
+            -- Step 3: download the image bytes
+            fetchRemote(imgUrl, {
+                method = "GET", connectionAttempts = 2, connectTimeout = 12000,
+            }, function(imgData, imgInfo)
+                if not imgInfo or imgInfo.statusCode ~= 200 then
+                    _imgCache[mint] = "failed"
+                    sendImageResult(player, mint, nil, nil,
+                        "image http " .. tostring(imgInfo and imgInfo.statusCode))
+                    return
+                end
+                local mime = "image/png"
+                local lower = imgUrl:lower()
+                if lower:match("%.jpe?g") then mime = "image/jpeg"
+                elseif lower:match("%.gif") then mime = "image/gif" end
+                _imgCache[mint] = "ready"
+                sendImageResult(player, mint, imgData, mime, nil)
+            end)
+        end)
+    end
+    addEventHandler(mEvt, resourceRoot, mHandler)
+    mp:fetchMetadata(mint, mEvt, resourceRoot)
+end
+
+addEvent("wallet:getTokenImage", true)
+addEventHandler("wallet:getTokenImage", root, function(mint)
+    fetchTokenImage(client, mint)
+end)

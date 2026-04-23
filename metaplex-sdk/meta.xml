@@ -1,0 +1,64 @@
+<meta>
+    <!-- Grove Street Wallet - Metaplex SDK for MTA:SA -->
+    <!-- https://github.com/yongsxyz -->
+    <info author="0xverse" name="metaplex-sdk" version="1.0.0" type="script" description="Pure Lua Metaplex SDK (Token Metadata + SPL Mint helpers)" />
+    <min_mta_version server="1.5.4-9.11342" />
+
+    <include resource="solana-sdk" />
+
+    <!-- Core -->
+    <script src="metaplex_base58.lua" type="server" />
+    <script src="metaplex_field.lua" type="server" />
+    <script src="metaplex_pda.lua" type="server" />
+    <script src="metaplex_borsh.lua" type="server" />
+    <script src="metaplex_json.lua" type="server" />
+    <script src="metaplex_rpc.lua" type="server" />
+    <script src="metaplex_ipfs.lua" type="server" />
+    <script src="metaplex_programs.lua" type="server" />
+    <script src="metaplex_core.lua" type="server" />
+    <script src="metaplex_client.lua" type="server" />
+
+    <!-- Init -->
+    <export function="initMetaplex" type="server" />
+
+    <!-- High-level token actions -->
+    <export function="createFungibleToken" type="server" />
+    <export function="createAndMintFungible" type="server" />
+    <export function="mintTokensTo" type="server" />
+    <export function="createTokenAccount" type="server" />
+    <export function="updateMetadata" type="server" />
+    <export function="burnTokens" type="server" />
+    <export function="createAgentToken" type="server" />
+    <export function="createAndPublishFungible" type="server" />
+    <export function="buildTokenMetadataJson" type="server" />
+
+    <!-- Agent identity (simplified; no MPL Core) -->
+    <export function="createAgent" type="server" />
+    <export function="setAgentRegistrationUri" type="server" />
+    <export function="buildAgentRegistrationJson" type="server" />
+    <export function="uploadAgentRegistration" type="server" />
+    <export function="publishAgent" type="server" />
+
+    <!-- IPFS helpers (Pinata) -->
+    <export function="setIpfsPinataJwt" type="server" />
+    <export function="setIpfsPinataKey" type="server" />
+    <export function="clearIpfsPinataAuth" type="server" />
+    <export function="getIpfsPinataStatus" type="server" />
+    <export function="testIpfsAuth" type="server" />
+    <export function="ipfsToHttps" type="server" />
+
+    <!-- PDA helpers (sync) -->
+    <export function="findMetadataPda" type="server" />
+    <export function="findMasterEditionPda" type="server" />
+    <export function="findAssociatedTokenAddress" type="server" />
+    <export function="findAgentAssetSigner" type="server" />
+
+    <!-- Reads -->
+    <export function="fetchMetadata" type="server" />
+    <export function="fetchDigitalAsset" type="server" />
+    <export function="fetchTokenBalance" type="server" />
+
+    <!-- Constants -->
+    <export function="getTokenMetadataProgramId" type="server" />
+    <export function="getTokenStandards" type="server" />
+</meta>

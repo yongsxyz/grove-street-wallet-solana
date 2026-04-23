@@ -228,10 +228,59 @@ Client → display in UI / chat
 ## Getting Started
 
 1. MTA:SA server (minimum `1.5.4-9.11342`)
-2. Drop `solana-sdk`, `solana-example`, and `solana-example-wallet` into your resources folder
-3. Start `solana-sdk` first, then the others
-4. For the wallet UI: start `solana-example-wallet` and open it with the keybind in-game
-5. For the command-line demo: start `solana-example` and type `/solhelp`
+2. Drop the resources you need into `resources/`. Common combos:
+   - **SOL transfer + SPL demo**: `solana-sdk`, `solana-example`, `solana-example-wallet`
+   - **Metaplex token playground**: `solana-sdk`, `metaplex-sdk`, `metaplex-example`, `metaplex-example-create-token-ui`
+   - **Metaplex agent playground**: `solana-sdk`, `metaplex-sdk`, `metaplex-example`, `metaplex-example-create-agent-ui`
+3. Start `solana-sdk` first, then `metaplex-sdk` (if used), then the example resources
+4. In-game: toggle the UIs with the keybinds below
+
+| Key | Opens |
+|-----|-------|
+| `F5` | Grove Street Wallet (`solana-example-wallet`) — manage SOL/SPL holdings |
+| `F6` | Token Creator UI (`metaplex-example-create-token-ui`) — create SPL tokens |
+| `F7` | Agent Creator UI (`metaplex-example-create-agent-ui`) — register MPL Core agents |
+
+Plus chat commands: `/solhelp`, `/mphelp` for the CLI versions.
+
+## Where does "Active Wallet" come from?
+
+All UIs share **one** wallet source: `solana-sdk`'s in-memory `_wallets` table. Every resource that touches Solana asks the SDK via `exports["solana-sdk"]:listWallets()` and picks from there.
+
+```
+┌─ solana-sdk (in-memory table) ─────────────────────────────┐
+│ _wallets = { [walletAddress1] = keypair, [addr2] = kp, ... }│
+└─────────────────────────────────────────────────────────────┘
+           ▲                            ▼
+           │                   exports:listWallets()
+   How entries get in?         How UIs read them?
+           │
+   ┌───────┼───────┬───────────────┬──────────────────┐
+   │       │       │               │                  │
+   │   chat-cmd  chat-cmd      wallet UI        Custom resource
+   │ /solwallet  /solwallet    (F5, SQLite +    calling exports
+   │   create     phrase       AES-encrypted    directly
+   │              import       keys; imports
+   │                           each keypair into
+   │                           solana-sdk on demand)
+```
+
+**Three ways to populate wallets:**
+
+| Method | Persistence | Where |
+|--------|-------------|-------|
+| **Chat `/solwallet`** (via `solana-example`) | In-memory only, **gone on resource restart** | `solana-example/server.lua` |
+| **Wallet UI F5** (via `solana-example-wallet`) | SQLite (`wallets.db`) encrypted with AES-128-CBC per-player. Auto re-imports into `solana-sdk` when player opens the wallet | `solana-example-wallet/server.lua` |
+| **Direct export call** from your resource | Whatever your resource does | `exports["solana-sdk"]:createWallet()` etc. |
+
+**The Metaplex UIs (F6/F7) do NOT create wallets** — they only *consume* the list. To use them:
+
+1. Import your wallet first via `/solwallet phrase` in chat, OR use the F5 Wallet UI to create/import one
+2. The wallet then appears in the F6/F7 picker
+3. Select it → it becomes the "ACTIVE WALLET" on the home screen
+4. All transactions signed with this wallet's keypair
+
+**Caveat:** `solana-sdk` stores keypairs **only in memory**. If you restart `solana-sdk` (not the UI resources), all wallets from `/solwallet` disappear. Wallets created via F5 stay in the SQLite database and can be re-loaded.
 
 ## Security
 
@@ -239,6 +288,27 @@ Client → display in UI / chat
 - Keys are encrypted with AES-128-CBC before hitting the database. Each player gets a unique encryption key derived from their serial + account ID + salt.
 - The random number generator in the SDK uses `math.random()` and `getTickCount()`, fine for devnet testing, but for real funds, import a key from Phantom or Solflare instead.
 - Signing takes ~0.3-0.5 seconds per transaction (expected for pure Lua crypto on a game server).
+
+### Credentials — do not commit
+
+The metaplex resources need a **Pinata API key** (for IPFS uploads). The `PINATA_API_KEY` / `PINATA_API_SECRET` variables at the top of each `server.lua` are **intentionally blank** — set them at runtime:
+
+```
+# In-game chat (preferred — in-memory only, cleared on resource restart):
+/mpipfskey  <apiKey>  <apiSecret>
+/mpipfsjwt  <pinataJwt>           # JWT alternative
+/mpipfstest                        # verify
+```
+
+Get free keys at [app.pinata.cloud/developers/api-keys](https://app.pinata.cloud/developers/api-keys).
+
+`.gitignore` in the repo root blocks the obvious leak sources:
+- `wallets.db` (encrypted wallet DB)
+- `created_tokens.json` / `created_agents.json` (persistent UI state)
+- `_iconcache_*.png` (downloaded logos)
+- `pinata.key`, `*.pinata.env` (local credential files if you use them)
+
+If you fork/commit: scan diffs for any `eyJ*` strings (JWTs always start with that) or 20-40 char hex strings before pushing.
 
 ## Coming Soon
 

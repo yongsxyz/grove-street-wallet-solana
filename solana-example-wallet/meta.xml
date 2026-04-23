@@ -4,6 +4,7 @@
     <info author="0xverse" name="solana-example-wallet" version="1.0.0" type="script" description="Grove Street Wallet - Example Wallet UI" />
 
     <include resource="solana-sdk" />
+    <include resource="metaplex-sdk" />
 
     <script src="server.lua" type="server" />
     <script src="client.lua" type="client" cache="false" />
