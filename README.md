@@ -51,6 +51,15 @@ The SDK exports 50+ functions that any MTA:SA resource can call. You don't need 
   <img src="screenshots/metaplex-token-burn.png" width="200" />
 </p>
 
+**Metaplex Agent Creator (F7)** — register MPL Core agents (real on-chain assets that show up on [metaplex.com/agents](https://metaplex.com/agents)). Configure name / description / services (web, MCP, etc.), version, supported trust primitives (reputation, crypto-economic, TEE-attestation) and x402 support. Deposit SOL directly to the agent's Asset Signer PDA.
+
+<p align="center">
+  <img src="screenshots/metaplex-agent-my-agents.png" width="200" />
+  <img src="screenshots/metaplex-agent-create.png" width="200" />
+  <img src="screenshots/metaplex-agent-details.png" width="200" />
+  <img src="screenshots/metaplex-agent-deposit.png" width="200" />
+</p>
+
 ## What It Does
 
 - **Create or import wallets**, generate a new keypair, use a 12/24-word mnemonic phrase, or paste a private key from Phantom/Solflare
