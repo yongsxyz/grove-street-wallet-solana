@@ -38,10 +38,17 @@ The SDK exports 50+ functions that any MTA:SA resource can call. You don't need 
   <img src="screenshots/tx-detail.png" width="200" />
 </p>
 
-**Metaplex Token Creator (F6)** — create SPL tokens and update their on-chain metadata (name / symbol / URI / seller fee bps) directly from the in-game UI.
+**Metaplex Token Creator (F6)** — full SPL token lifecycle from in-game: list your mints, create new fungible tokens (atomic CreateV1 + ATA + MintTo in one TX), inspect on-chain metadata, update it, and burn supply.
 
 <p align="center">
-  <img src="screenshots/metaplex-token-update-metadata.png" width="260" />
+  <img src="screenshots/metaplex-token-my-tokens.png" width="200" />
+  <img src="screenshots/metaplex-token-create.png" width="200" />
+  <img src="screenshots/metaplex-token-details.png" width="200" />
+</p>
+<p align="center">
+  <img src="screenshots/metaplex-token-update-metadata.png" width="200" />
+  <img src="screenshots/metaplex-token-update-metadata-filled.png" width="200" />
+  <img src="screenshots/metaplex-token-burn.png" width="200" />
 </p>
 
 ## What It Does
