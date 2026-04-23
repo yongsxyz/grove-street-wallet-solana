@@ -26,6 +26,8 @@ The SDK exports 50+ functions that any MTA:SA resource can call. You don't need 
 
 ## Screenshots
 
+**Grove Street Wallet (F5)**
+
 <p align="center">
   <img src="screenshots/create-wallet.png" width="200" />
   <img src="screenshots/add-wallet.png" width="200" />
@@ -34,6 +36,12 @@ The SDK exports 50+ functions that any MTA:SA resource can call. You don't need 
 <p align="center">
   <img src="screenshots/activity.png" width="200" />
   <img src="screenshots/tx-detail.png" width="200" />
+</p>
+
+**Metaplex Token Creator (F6)** — create SPL tokens and update their on-chain metadata (name / symbol / URI / seller fee bps) directly from the in-game UI.
+
+<p align="center">
+  <img src="screenshots/metaplex-token-update-metadata.png" width="260" />
 </p>
 
 ## What It Does
